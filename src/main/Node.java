@@ -34,7 +34,10 @@ public class Node {
     }
 
     public void setFAZ(float value) {
+        System.out.println("NAME: " + name);
+        System.out.println("Value:" + value);
         if (faz <= value) {
+            System.out.println("swapped with" + faz);
             faz = value;
             calcFEZ();
         }

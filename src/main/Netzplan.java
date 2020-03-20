@@ -17,6 +17,7 @@ public class Netzplan {
         netzplan.createNet();
         netzplan.fillNet();
         netzplan.iterateToEnd();
+        netzplan.debug();
         netzplan.iterateToStart();
         netzplan.calculateOptimalPath();
     }
@@ -178,22 +179,21 @@ public class Netzplan {
             if (!net.get(i).name.equals(startingNode.name) && inputType == InputType.PREVIOUS_NODES) {
                 //Check the net if there are any nodes that match to the list
                 // of previous nodes that the current node holds and connect them
-                for (int c = 0; c < connectedNodes.length; c++) {
+                for (String connectedNode : connectedNodes) {
                     for (Node node : net) {
-                        if (node.name.equals(connectedNodes[c])) {
+                        if (node.name.equals(connectedNode)) {
                             net.get(i).previousNodes.add(node); // B now knows A
                             net.get(i).previousNodes.get(net.get(i).previousNodes.size() - 1).addNextNode(net.get(i)); // A now knows B
                         }
                     }
                 }
             }
-            //Next nodes
-            else if (net.get(i).name.equals(startingNode.name) && inputType == InputType.NEXT_NODES) {
-                for (int c = 0; c < connectedNodes.length; c++) {
+            //Next nodes    net.get(i).name.equals(startingNode.name) &&
+            else if (inputType == InputType.NEXT_NODES) {
+                for (String connectedNode : connectedNodes) {
                     for (Node potentialNextNode : net) {
                         //If the name matches the name in the list of next nodes, connect both
-                        if (potentialNextNode.name.equals(connectedNodes[c])) {
-
+                        if (potentialNextNode.name.equals(connectedNode)) {
                             net.get(i).nextNodes.add(potentialNextNode); //A knows B
                             net.get(i).nextNodes.get(net.get(i).nextNodes.size() - 1).addPreviousNode(net.get(i));
                         }
@@ -205,28 +205,20 @@ public class Netzplan {
 
     private void iterateToEnd() {
         for (Node node : net) {
-            if (inputType == InputType.PREVIOUS_NODES) {
-                if (node.previousNodes.size() == 0) {
-                    node.setFAZ(0);
-                }
-            } else if (inputType == InputType.NEXT_NODES) {
-                if (node.nextNodes.size() == 0) {
-                    node.setFAZ(0);
-                }
+            if (node.previousNodes.size() == 0 && inputType == InputType.PREVIOUS_NODES) {
+                System.out.println("P");
+                node.setFAZ(0);
+            } else if (node.previousNodes.size() == 0 && inputType == InputType.NEXT_NODES) {
+                System.out.println("N");
+                node.setFAZ(0);
             }
         }
     }
 
     private void iterateToStart() {
         for (Node node : net) {
-            if (inputType == InputType.PREVIOUS_NODES) {
-                if (node.nextNodes.size() == 0) {
-                    node.setSEZ(node.faz);
-                }
-            }else if (inputType == InputType.NEXT_NODES) {
-                if (node.nextNodes.size() == 0) {
-                    node.setSEZ(node.faz);
-                }
+            if (node.nextNodes.size() == 0) {
+                node.setSEZ(node.faz);
             }
         }
     }
@@ -260,8 +252,16 @@ public class Netzplan {
         calcFP();
         getPath();
     }
+
+    private void debug() {
+        for (Node node : net) {
+            node.debug();
+        }
+    }
 }
 
 enum InputType {
     PREVIOUS_NODES, NEXT_NODES
 }
+
+

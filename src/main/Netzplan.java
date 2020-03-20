@@ -1,8 +1,6 @@
 package main;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
@@ -15,6 +13,7 @@ public class Netzplan {
         Netzplan netzplan = new Netzplan();
         netzplan.getInput();
         //netzplan.validate();
+        netzplan.getStartingNode();
         netzplan.createNet();
         netzplan.fillNet();
         netzplan.iterateToEnd();
@@ -25,8 +24,7 @@ public class Netzplan {
     List<Node> net;
     List<String> inputs_NodeNames;
     List<Float> inputs_ProcessingTime;
-    List<String> inputs_PreviousNodes;
-    List<String> inputs_FollowingNodes;
+    List<String> inputs_ConnectedNodes;
 
     Node startingNode;
     Scanner scanner;
@@ -37,7 +35,7 @@ public class Netzplan {
         net = new ArrayList<>();
         inputs_NodeNames = new ArrayList<>();
         inputs_ProcessingTime = new ArrayList<>();
-        inputs_PreviousNodes = new ArrayList<>();
+        inputs_ConnectedNodes = new ArrayList<>();
     }
 
     private void getInput() {
@@ -88,10 +86,10 @@ public class Netzplan {
     private void inputRelatedNodes() {
         if (inputType == InputType.PREVIOUS_NODES) {
             System.out.print("Previous nodes\n(Ex: A,B):\t\t\t");
-            inputs_PreviousNodes.add(scanner.next());
+            inputs_ConnectedNodes.add(scanner.next());
         } else if (inputType == InputType.NEXT_NODES) {
             System.out.print("Following nodes\n(Ex: A,B):\t\t\t");
-            inputs_FollowingNodes.add(scanner.next());
+            inputs_ConnectedNodes.add(scanner.next());
         }
     }
 
@@ -133,27 +131,19 @@ public class Netzplan {
 
     private void createNet() {
         System.out.println("-------------------");
-        // Check for the node that requires the starting node
         for (int i = 0; i < inputs_NodeNames.size(); i++) {
-            if (inputs_PreviousNodes.get(i).equals("0")) {
-                System.out.println("Starting node: " + inputs_NodeNames.get(i));
-                startingNode = new Node(inputs_NodeNames.get(i), inputs_ProcessingTime.get(i));
-                net.add(startingNode);
-            }
-            String currentNodenName = inputs_NodeNames.get(i);
-            // Ignore the starting node name
-            if (!currentNodenName.equals(startingNode.name)) {
+            String current = inputs_NodeNames.get(i);
+            if (!current.equals(startingNode.name)) {
                 // Check if the node is already initialized
                 boolean found = false;
-                for (int netIndex = 0; netIndex < net.size(); netIndex++) {
-                    // If so then do nothing 
-                    if (net.get(netIndex).name.equals(currentNodenName)) {
-                        //System.out.println("Node " + currentNodenName + " already in the net");
+                for (int p = 0; p < net.size(); p++) {
+                    if (net.get(p).name.equals(current)) {
                         found = true;
                     }
-                    // If not add it to the net
-                    else if (netIndex == net.size() - 1 && !found) {
-                        Node node = new Node(currentNodenName, inputs_ProcessingTime.get(i));
+                    // At the end of the iteration
+                    // add it to the net if it is not marked as found
+                    else if (p == net.size() - 1 && !found) {
+                        Node node = new Node(current, inputs_ProcessingTime.get(i));
                         net.add(node);
                     }
                 }
@@ -162,19 +152,50 @@ public class Netzplan {
         System.out.println("Net plan created.");
     }
 
+    private void getStartingNode() {
+        for (int i = 0; i < inputs_NodeNames.size(); i++) {
+            if (inputs_ConnectedNodes.get(i).equals("0") && inputType == InputType.PREVIOUS_NODES) {
+                System.out.println("Starting node: " + inputs_NodeNames.get(i));
+                startingNode = new Node(inputs_NodeNames.get(i), inputs_ProcessingTime.get(i));
+                net.add(startingNode);
+                break;
+            } else if (!inputs_ConnectedNodes.get(i).equals("0") && inputType == InputType.NEXT_NODES) {
+                System.out.println("Starting node: " + inputs_NodeNames.get(i));
+                startingNode = new Node(inputs_NodeNames.get(i), inputs_ProcessingTime.get(i));
+                net.add(startingNode);
+                break;
+            }
+        }
+    }
+
     private void fillNet() {
         System.out.println("-------------------");
         System.out.println(GREEN + "Net plan:" + COLOR_RESET);
+
         for (int i = 0; i < net.size(); i++) {
-            // Ignore the starting node
-            if (!net.get(i).name.equals(startingNode.name)) {
-                // Add the previous nodes
-                String[] previousNodeNames = inputs_PreviousNodes.get(i).split(",");
-                for (int p = 0; p < previousNodeNames.length; p++) {
-                    for (Node nodes : net) {
-                        if (nodes.name.equals(previousNodeNames[p])) {
-                            net.get(i).previousNodes.add(nodes); // B now knows A
-                            net.get(i).previousNodes.get(net.get(i).previousNodes.size() - 1).addNextNode(net.get(i)); // A now knows B                                                                                        
+            String[] connectedNodes = inputs_ConnectedNodes.get(i).split(",");
+
+            if (!net.get(i).name.equals(startingNode.name) && inputType == InputType.PREVIOUS_NODES) {
+                //Check the net if there are any nodes that match to the list
+                // of previous nodes that the current node holds and connect them
+                for (int c = 0; c < connectedNodes.length; c++) {
+                    for (Node node : net) {
+                        if (node.name.equals(connectedNodes[c])) {
+                            net.get(i).previousNodes.add(node); // B now knows A
+                            net.get(i).previousNodes.get(net.get(i).previousNodes.size() - 1).addNextNode(net.get(i)); // A now knows B
+                        }
+                    }
+                }
+            }
+            //Next nodes
+            else if (net.get(i).name.equals(startingNode.name) && inputType == InputType.NEXT_NODES) {
+                for (int c = 0; c < connectedNodes.length; c++) {
+                    for (Node potentialNextNode : net) {
+                        //If the name matches the name in the list of next nodes, connect both
+                        if (potentialNextNode.name.equals(connectedNodes[c])) {
+
+                            net.get(i).nextNodes.add(potentialNextNode); //A knows B
+                            net.get(i).nextNodes.get(net.get(i).nextNodes.size() - 1).addPreviousNode(net.get(i));
                         }
                     }
                 }
@@ -184,16 +205,28 @@ public class Netzplan {
 
     private void iterateToEnd() {
         for (Node node : net) {
-            if (node.previousNodes.size() == 0) {
-                node.setFAZ(0);
+            if (inputType == InputType.PREVIOUS_NODES) {
+                if (node.previousNodes.size() == 0) {
+                    node.setFAZ(0);
+                }
+            } else if (inputType == InputType.NEXT_NODES) {
+                if (node.nextNodes.size() == 0) {
+                    node.setFAZ(0);
+                }
             }
         }
     }
 
     private void iterateToStart() {
         for (Node node : net) {
-            if (node.nextNodes.size() == 0) {
-                node.setSEZ(node.faz);
+            if (inputType == InputType.PREVIOUS_NODES) {
+                if (node.nextNodes.size() == 0) {
+                    node.setSEZ(node.faz);
+                }
+            }else if (inputType == InputType.NEXT_NODES) {
+                if (node.nextNodes.size() == 0) {
+                    node.setSEZ(node.faz);
+                }
             }
         }
     }

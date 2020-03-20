@@ -28,6 +28,11 @@ public class Node {
         //System.out.println("Next node " + node.name + " added to node" + name);
     }
 
+    public void addPreviousNode(Node node) {
+        previousNodes.add(node);
+        //System.out.println("Next node " + node.name + " added to node" + name);
+    }
+
     public void setFAZ(float value) {
         if (faz <= value) {
             faz = value;

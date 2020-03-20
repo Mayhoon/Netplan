@@ -1,25 +1,14 @@
 package main;
 
-import java.util.ArrayList;
-import java.util.InputMismatchException;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class Netzplan {
     public static final String GREEN = "\u001B[32m";
+    public static final String ORANGE = "\u001b[34m";
     public static final String COLOR_RESET = "\u001B[0m";
 
     public static void main(String[] args) {
-        Netzplan netzplan = new Netzplan();
-        netzplan.getInput();
-        //netzplan.validate();
-        netzplan.getStartingNode();
-        netzplan.createNet();
-        netzplan.fillNet();
-        netzplan.iterateToEnd();
-        netzplan.debug();
-        netzplan.iterateToStart();
-        netzplan.calculateOptimalPath();
+        new Netzplan();
     }
 
     List<Node> net;
@@ -37,6 +26,15 @@ public class Netzplan {
         inputs_NodeNames = new ArrayList<>();
         inputs_ProcessingTime = new ArrayList<>();
         inputs_ConnectedNodes = new ArrayList<>();
+
+        getInput();
+        validate();
+        getStartingNode();
+        createNet();
+        fillNet();
+        iterateToEnd();
+        iterateToStart();
+        calculateOptimalPath();
     }
 
     private void getInput() {
@@ -53,7 +51,7 @@ public class Netzplan {
     }
 
     private void getInputType() {
-        System.out.print("Do you know the previous or following node? \n(prev / foll):\t\t");
+        System.out.print("Do you know all previous or following nodes? \n(prev / foll):\t\t");
         String input = scanner.next();
         if (input.equals("prev")) {
             inputType = InputType.PREVIOUS_NODES;
@@ -63,7 +61,7 @@ public class Netzplan {
             System.out.println("Invalid Input.");
             System.exit(0);
         }
-        System.out.println("------------------");
+        System.out.println("------------------------");
     }
 
     private void inputNodeName() {
@@ -86,22 +84,21 @@ public class Netzplan {
 
     private void inputRelatedNodes() {
         if (inputType == InputType.PREVIOUS_NODES) {
-            System.out.print("Previous nodes\n(Ex: A,B):\t\t\t");
+            System.out.print("Previous nodes:\t\t");
             inputs_ConnectedNodes.add(scanner.next());
         } else if (inputType == InputType.NEXT_NODES) {
-            System.out.print("Following nodes\n(Ex: A,B):\t\t\t");
+            System.out.print("Following nodes:\t");
             inputs_ConnectedNodes.add(scanner.next());
         }
     }
 
-    // Check wether the user wants to add another node to the net or not
     private boolean askToRepeat() {
         System.out.print("Add another one? \n(y/n)\t\t\t\t");
         String input = scanner.next();
         if (input.equals("n")) {
             return false;
         } else if (input.equals("y")) {
-            System.out.println("------------------");
+            System.out.println("------------------------");
             return true;
         } else {
             System.out.println("Invalid Input.");
@@ -110,28 +107,23 @@ public class Netzplan {
         }
     }
 
-//    private void validate() {
-//        System.out.println("-------------------");
-//        String[] nodeNames;
-//
-//        for (int i = 0; i < inputs_PreviousNodes.size(); i++) {
-//            if (inputs_PreviousNodes.get(i).equals("0")) {
-//                nodeNames = inputs_PreviousNodes.get(i).split(",");
-//                for (String nodeName : nodeNames) {
-//                    int occurrences = Collections.frequency(Arrays.asList(nodeNames), nodeName);
-//                    if (occurrences > 1) {
-//                        System.out.println(inputs_NodeNames.get(i) + " contains " + occurrences + " duplicates. Exiting...");
-//                        System.exit(0);
-//                    }
-//                }
-//            }
-//        }
-//        System.out.println("-------------------");
-//        System.out.println("The whole table is valid! Generate net...");
-//    }
+    private void validate() {
+        String[] nodeNames;
+        for (int i = 0; i < inputs_ConnectedNodes.size(); i++) {
+            if (inputs_ConnectedNodes.get(i).equals("0")) {
+                nodeNames = inputs_ConnectedNodes.get(i).split(",");
+                for (String nodeName : nodeNames) {
+                    int occurrences = Collections.frequency(Arrays.asList(nodeNames), nodeName);
+                    if (occurrences > 1) {
+                        System.out.println(inputs_NodeNames.get(i) + " contains " + occurrences + " duplicates. Exiting...");
+                        System.exit(0);
+                    }
+                }
+            }
+        }
+    }
 
     private void createNet() {
-        System.out.println("-------------------");
         for (int i = 0; i < inputs_NodeNames.size(); i++) {
             String current = inputs_NodeNames.get(i);
             if (!current.equals(startingNode.name)) {
@@ -150,10 +142,10 @@ public class Netzplan {
                 }
             }
         }
-        System.out.println("Net plan created.");
     }
 
     private void getStartingNode() {
+        System.out.println("------------------------");
         for (int i = 0; i < inputs_NodeNames.size(); i++) {
             if (inputs_ConnectedNodes.get(i).equals("0") && inputType == InputType.PREVIOUS_NODES) {
                 System.out.println("Starting node: " + inputs_NodeNames.get(i));
@@ -170,7 +162,7 @@ public class Netzplan {
     }
 
     private void fillNet() {
-        System.out.println("-------------------");
+        System.out.println("------------------------");
         System.out.println(GREEN + "Net plan:" + COLOR_RESET);
 
         for (int i = 0; i < net.size(); i++) {
@@ -205,11 +197,7 @@ public class Netzplan {
 
     private void iterateToEnd() {
         for (Node node : net) {
-            if (node.previousNodes.size() == 0 && inputType == InputType.PREVIOUS_NODES) {
-                System.out.println("P");
-                node.setFAZ(0);
-            } else if (node.previousNodes.size() == 0 && inputType == InputType.NEXT_NODES) {
-                System.out.println("N");
+            if (node.previousNodes.size() == 0) {
                 node.setFAZ(0);
             }
         }
@@ -221,6 +209,12 @@ public class Netzplan {
                 node.setSEZ(node.faz);
             }
         }
+    }
+
+    private void calculateOptimalPath() {
+        calcGP();
+        calcFP();
+        getPath();
     }
 
     private void calcGP() {
@@ -237,6 +231,7 @@ public class Netzplan {
     }
 
     private void getPath() {
+        System.out.println(ORANGE + "Critical path:" + COLOR_RESET);
         for (Node node : net) {
             if (node.previousNodes.size() == 0) {
                 System.out.print(node.name);
@@ -244,18 +239,6 @@ public class Netzplan {
                     nextNode.getPath();
                 }
             }
-        }
-    }
-
-    private void calculateOptimalPath() {
-        calcGP();
-        calcFP();
-        getPath();
-    }
-
-    private void debug() {
-        for (Node node : net) {
-            node.debug();
         }
     }
 }

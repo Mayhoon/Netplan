@@ -25,19 +25,14 @@ public class Node {
 
     public void addNextNode(Node node) {
         nextNodes.add(node);
-        //System.out.println("Next node " + node.name + " added to node" + name);
     }
 
     public void addPreviousNode(Node node) {
         previousNodes.add(node);
-        //System.out.println("Next node " + node.name + " added to node" + name);
     }
 
     public void setFAZ(float value) {
-        System.out.println("NAME: " + name);
-        System.out.println("Value:" + value);
         if (faz <= value) {
-            System.out.println("swapped with" + faz);
             faz = value;
             calcFEZ();
         }
@@ -88,10 +83,10 @@ public class Node {
     }
 
     public void debug() {
-        System.out.println("--------------------------------------");
+        System.out.println("------------------------");
         System.out.println(faz + "\t\t" + name + "\t\t" + fez);
         System.out.println(processTime + "\t\t" + gp + "\t\t" + fp);
         System.out.println(saz + "\t\t\t\t" + sez);
-        System.out.println("--------------------------------------");
+        System.out.println("------------------------");
     }
 }

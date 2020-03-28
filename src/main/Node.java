@@ -83,10 +83,10 @@ public class Node {
     }
 
     public void debug() {
-        System.out.println("------------------------");
+        System.out.println("----------------------------------");
         System.out.println(faz + "\t\t" + name + "\t\t" + fez);
         System.out.println(processTime + "\t\t" + gp + "\t\t" + fp);
         System.out.println(saz + "\t\t\t\t" + sez);
-        System.out.println("------------------------");
+        System.out.println("----------------------------------");
     }
 }

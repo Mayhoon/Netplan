@@ -12,9 +12,9 @@ public class Netzplan {
     }
 
     List<Node> net;
-    List<String> inputs_NodeNames;
-    List<Float> inputs_ProcessingTime;
-    List<String> inputs_ConnectedNodes;
+    List<String> nodeNames;
+    List<Float> processingTime;
+    List<String> connectedNodes;
 
     Node startingNode;
     Scanner scanner;
@@ -23,9 +23,9 @@ public class Netzplan {
     public Netzplan() {
         scanner = new Scanner(System.in);
         net = new ArrayList<>();
-        inputs_NodeNames = new ArrayList<>();
-        inputs_ProcessingTime = new ArrayList<>();
-        inputs_ConnectedNodes = new ArrayList<>();
+        nodeNames = new ArrayList<>();
+        processingTime = new ArrayList<>();
+        connectedNodes = new ArrayList<>();
 
         getInput();
         validate();
@@ -38,70 +38,84 @@ public class Netzplan {
     }
 
     private void getInput() {
+        printSeparator();
+        getInputType();
+
         try {
-            getInputType();
-            do {
-                inputNodeName();
-                inputProcessingTime();
-                inputRelatedNodes();
-            } while (askToRepeat());
+            System.out.print("Aus einer Excel Datei (.xls)\nimportieren?(j/n)\t\t\t");
+            String input = scanner.next();
+            if (input.equals("j")) {
+                System.out.print("Pfad zur Datei:\t\t\t\t");
+                OfficeReader reader = new OfficeReader(nodeNames, processingTime, connectedNodes);
+                reader.readFromFile(scanner.next());
+                nodeNames = reader.getNodeNames();
+                processingTime = reader.getProcessingTime();
+                connectedNodes = reader.getConnectedNodes();
+            } else {
+                do {
+                    printSeparator();
+                    inputNodeName();
+                    inputProcessingTime();
+                    inputConnectedNodes();
+                } while (askToRepeat());
+            }
         } catch (InputMismatchException e) {
             e.printStackTrace();
         }
     }
 
     private void getInputType() {
-        System.out.print("Do you know all previous or following nodes? \n(prev / foll):\t\t");
+        System.out.print("Sind alle (v)orherigen oder\n(n)achfolgenden Prozesse bekannt?\t");
         String input = scanner.next();
-        if (input.equals("prev")) {
+        if (input.equals("v")) {
             inputType = InputType.PREVIOUS_NODES;
-        } else if (input.equals("foll")) {
+        } else if (input.equals("n")) {
             inputType = InputType.NEXT_NODES;
         } else {
-            System.out.println("Invalid Input.");
+            System.out.println("Invalide Eingabe");
             System.exit(0);
         }
-        System.out.println("------------------------");
+        printSeparator();
     }
 
     private void inputNodeName() {
         while (true) {
-            System.out.print("Node name:\t\t\t");
+            System.out.print("Prozessname:\t\t");
             String input = scanner.next();
-            if (!inputs_NodeNames.contains(input)) {
-                inputs_NodeNames.add(input);
+            if (!nodeNames.contains(input)) {
+                nodeNames.add(input);
                 break;
             } else {
-                System.out.println("Node name already exists. Please try again:");
+                System.out.println("Prozessname existiert bereits. Bitte noch einmal neu versuchen:");
             }
         }
     }
 
     private void inputProcessingTime() {
-        System.out.print("Process time:\t\t");
-        inputs_ProcessingTime.add(scanner.nextFloat());
+        System.out.print("Prozessdauer:\t\t");
+        processingTime.add(scanner.nextFloat());
     }
 
-    private void inputRelatedNodes() {
+    private void inputConnectedNodes() {
         if (inputType == InputType.PREVIOUS_NODES) {
-            System.out.print("Previous nodes:\t\t");
-            inputs_ConnectedNodes.add(scanner.next());
+            System.out.print("Vorheriger Prozess:\t");
+            connectedNodes.add(scanner.next());
         } else if (inputType == InputType.NEXT_NODES) {
-            System.out.print("Following nodes:\t");
-            inputs_ConnectedNodes.add(scanner.next());
+            System.out.print("Naechster Prozess:\t");
+            connectedNodes.add(scanner.next());
         }
     }
 
     private boolean askToRepeat() {
-        System.out.print("Add another one? \n(y/n)\t\t\t\t");
+        System.out.print("Neuer Prozess? (j/n)\t");
         String input = scanner.next();
         if (input.equals("n")) {
             return false;
-        } else if (input.equals("y")) {
-            System.out.println("------------------------");
+        } else if (input.equals("j")) {
+            printSeparator();
             return true;
         } else {
-            System.out.println("Invalid Input.");
+            System.out.println("Invalide Eingabe");
             System.exit(0);
             return false;
         }
@@ -109,13 +123,13 @@ public class Netzplan {
 
     private void validate() {
         String[] nodeNames;
-        for (int i = 0; i < inputs_ConnectedNodes.size(); i++) {
-            if (inputs_ConnectedNodes.get(i).equals("0")) {
-                nodeNames = inputs_ConnectedNodes.get(i).split(",");
+        for (int i = 0; i < connectedNodes.size(); i++) {
+            if (connectedNodes.get(i).equals("NONE")) {
+                nodeNames = connectedNodes.get(i).split(",");
                 for (String nodeName : nodeNames) {
                     int occurrences = Collections.frequency(Arrays.asList(nodeNames), nodeName);
                     if (occurrences > 1) {
-                        System.out.println(inputs_NodeNames.get(i) + " contains " + occurrences + " duplicates. Exiting...");
+                        System.out.println(this.nodeNames.get(i) + " enthaelt " + occurrences + " Duplikate...");
                         System.exit(0);
                     }
                 }
@@ -124,8 +138,8 @@ public class Netzplan {
     }
 
     private void createNet() {
-        for (int i = 0; i < inputs_NodeNames.size(); i++) {
-            String current = inputs_NodeNames.get(i);
+        for (int i = 0; i < nodeNames.size(); i++) {
+            String current = nodeNames.get(i);
             if (!current.equals(startingNode.name)) {
                 // Check if the node is already initialized
                 boolean found = false;
@@ -133,10 +147,8 @@ public class Netzplan {
                     if (net.get(p).name.equals(current)) {
                         found = true;
                     }
-                    // At the end of the iteration
-                    // add it to the net if it is not marked as found
                     else if (p == net.size() - 1 && !found) {
-                        Node node = new Node(current, inputs_ProcessingTime.get(i));
+                        Node node = new Node(current, processingTime.get(i));
                         net.add(node);
                     }
                 }
@@ -145,16 +157,16 @@ public class Netzplan {
     }
 
     private void getStartingNode() {
-        System.out.println("------------------------");
-        for (int i = 0; i < inputs_NodeNames.size(); i++) {
-            if (inputs_ConnectedNodes.get(i).equals("0") && inputType == InputType.PREVIOUS_NODES) {
-                System.out.println("Starting node: " + inputs_NodeNames.get(i));
-                startingNode = new Node(inputs_NodeNames.get(i), inputs_ProcessingTime.get(i));
+        printSeparator();
+        for (int i = 0; i < nodeNames.size(); i++) {
+            if (connectedNodes.get(i).equals("NONE") && inputType == InputType.PREVIOUS_NODES) {
+                System.out.println("Erster Prozess: " + nodeNames.get(i));
+                startingNode = new Node(nodeNames.get(i), processingTime.get(i));
                 net.add(startingNode);
                 break;
-            } else if (!inputs_ConnectedNodes.get(i).equals("0") && inputType == InputType.NEXT_NODES) {
-                System.out.println("Starting node: " + inputs_NodeNames.get(i));
-                startingNode = new Node(inputs_NodeNames.get(i), inputs_ProcessingTime.get(i));
+            } else if (!connectedNodes.get(i).equals("NONE") && inputType == InputType.NEXT_NODES) {
+                System.out.println("Erster Prozess: " + nodeNames.get(i));
+                startingNode = new Node(nodeNames.get(i), processingTime.get(i));
                 net.add(startingNode);
                 break;
             }
@@ -162,11 +174,11 @@ public class Netzplan {
     }
 
     private void fillNet() {
-        System.out.println("------------------------");
-        System.out.println(GREEN + "Net plan:" + COLOR_RESET);
+        printSeparator();
+        System.out.println(GREEN + "Netzplan:" + COLOR_RESET);
 
         for (int i = 0; i < net.size(); i++) {
-            String[] connectedNodes = inputs_ConnectedNodes.get(i).split(",");
+            String[] connectedNodes = this.connectedNodes.get(i).split(",");
 
             if (!net.get(i).name.equals(startingNode.name) && inputType == InputType.PREVIOUS_NODES) {
                 //Check the net if there are any nodes that match to the list
@@ -231,7 +243,7 @@ public class Netzplan {
     }
 
     private void getPath() {
-        System.out.println(ORANGE + "Critical path:" + COLOR_RESET);
+        System.out.println(GREEN + "Kritischer Pfad:" + COLOR_RESET);
         for (Node node : net) {
             if (node.previousNodes.size() == 0) {
                 System.out.print(node.name);
@@ -240,6 +252,10 @@ public class Netzplan {
                 }
             }
         }
+    }
+
+    private void printSeparator() {
+        System.out.println("----------------------------------");
     }
 }
 

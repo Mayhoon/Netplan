@@ -1,4 +1,4 @@
-# Netplan rechner
+# Netzplan rechner
 Ein Rechner der den Kritischen Pfad fuer ein gegebenes Netz errechnet.
 
 Es gibt zwei arten dem Rechner die Prozesse zu uebergeben,
